@@ -1,0 +1,20 @@
+{
+  "title": "Stack Monitoring",
+  "uid": "stack-mon",
+  "panels": [
+    {"type": "timeseries", "title": "CPU Usage %", "gridPos": {"h":8,"w":12,"x":0,"y":0},
+     "targets": [{"expr": "100 - (avg by(instance)(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"}]},
+    {"type": "timeseries", "title": "Memory Available %", "gridPos": {"h":8,"w":12,"x":12,"y":0},
+     "targets": [{"expr": "(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100"}]},
+    {"type": "timeseries", "title": "Disk Free %", "gridPos": {"h":8,"w":12,"x":0,"y":8},
+     "targets": [{"expr": "(node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100"}]},
+    {"type": "timeseries", "title": "PG Connections", "gridPos": {"h":8,"w":12,"x":12,"y":8},
+     "targets": [{"expr": "pg_stat_database_numbackends{datname=\"appdb\"}"}]},
+    {"type": "timeseries", "title": "RPS", "gridPos": {"h":8,"w":12,"x":0,"y":16},
+     "targets": [{"expr": "sum(rate(app_requests_total[1m]))"}]},
+    {"type": "timeseries", "title": "5xx Rate %", "gridPos": {"h":8,"w":12,"x":12,"y":16},
+     "targets": [{"expr": "(sum(rate(app_requests_total{status=~\"5..\"}[5m])) / sum(rate(app_requests_total[5m]))) * 100"}]},
+    {"type": "timeseries", "title": "Latency p95", "gridPos": {"h":8,"w":12,"x":0,"y":24},
+     "targets": [{"expr": "histogram_quantile(0.95, sum(rate(app_request_latency_seconds_bucket[5m])) by (le))"}]}
+  ]
+}
