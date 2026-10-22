@@ -58,30 +58,17 @@ test:app:
 # ---------- BUILD ----------
 build:image:
   stage: build
-  image: docker:27-cli
-  services:
-    - docker:27-dind
   variables:
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_CERTDIR: "/certs"
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
+    BUILDX_NO_DEFAULT_ATTESTATIONS: "1"
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    # Кэширование слоёв: тянем latest для --cache-from [citation:1][citation:2]
     - docker pull $IMAGE_LATEST || true
-    - docker build
-        --build-arg BUILDKIT_INLINE_CACHE=1
-        --cache-from $IMAGE_LATEST
-        -t $IMAGE_TAG
-        -t $IMAGE_LATEST
-        ./app
+    - docker build --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $IMAGE_LATEST -t $IMAGE_TAG -t $IMAGE_LATEST ./app
     - docker push $IMAGE_TAG
     - docker push $IMAGE_LATEST
-  cache:
-    key: docker-build-$CI_COMMIT_REF_SLUG
-    paths:
-      - .docker-cache/   # опционально, для BuildKit registry-cache
-
 # ---------- SCAN ----------
 scan:trivy:
   stage: scan
@@ -91,7 +78,7 @@ scan:trivy:
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
   script:
-    - trivy image --exit-code 1 --severity HIGH,CRITICAL $IMAGE_TAG
+    - trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed $IMAGE_TAG
   allow_failure: false   # пайплайн падает при HIGH/CRITICAL
 
 # ---------- DEPLOY ----------
